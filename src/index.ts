@@ -136,7 +136,7 @@ async function initAudio(){
 }
 
 function loopFlushAudio() {
-    setTimeout(loopFlushAudio, 500);
+    setTimeout(loopFlushAudio, 150);
     if (_recordingStatus == eRecordingState.Recording)
     {
         _mediaRecorder.requestData();
