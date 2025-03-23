@@ -38,7 +38,7 @@ class Manager {
     }
 
     // @ts-ignore
-    public async run({ audio, language }) {
+    public async run({ audio, language, generationId }) {
         if (!this._loaded || this._processsing) return;
         this._processsing = true;
         self.postMessage({ status: 'start' });
@@ -52,7 +52,7 @@ class Manager {
             }
             self.postMessage({
                 status: 'update',
-                output, tps, numTokens,
+                output, tps, numTokens, generationId
             });
         }
 
@@ -80,6 +80,7 @@ class Manager {
         self.postMessage({
             status: 'generate',
             output: outputText,
+            generationId
         });
 
         this._processsing = false;

@@ -2,8 +2,8 @@ import { AudioAnalyzer } from "./audio analyzer";
 import { Deferred } from "./util";
 
 document.addEventListener("DOMContentLoaded", () => {
-    setup();
     incrementBubble();
+    setup();
 });
 
 enum eRecordingState { Idle, Loading, Paused , Recording}
@@ -13,7 +13,6 @@ let _recordingStatus: eRecordingState = eRecordingState.Idle;
 
 let _mediaRecorder: MediaRecorder;
 let _audioChunks: Blob[] = [];
-let _currDiv: HTMLDivElement = null;
 
 async function setup() {
 
@@ -35,11 +34,13 @@ async function setup() {
                 initAudio().then(() => {
                     updateStatus(eRecordingState.Paused);
                     btRecord.click();
+                    loopFlushAudio();
                 });
                 break;
 
             case 'generate':
-                _currDiv.innerText = data.output;
+                if(data.output == '') break;
+                getBubble(data.generationId).innerText = data.output;
                 break;
 
             case 'update':
@@ -55,7 +56,6 @@ async function setup() {
             _worker.postMessage({ type: "load" });
         }
         else if (_recordingStatus == eRecordingState.Paused) {
-            incrementBubble();
             _mediaRecorder.start();
         } else if (_recordingStatus == eRecordingState.Recording) {
             _mediaRecorder.stop();
@@ -83,9 +83,9 @@ async function initAudio(){
     let audioAnalyzer = new AudioAnalyzer({sampleRate: audioContext.sampleRate});
 
     _mediaRecorder.onstart = (event) => {
+        incrementBubble();
         _audioChunks = [];
         updateStatus(eRecordingState.Recording);
-        setTimeout(loopFlushAudio, 25);
     };
     
     _mediaRecorder.ondataavailable = (event) => {
@@ -106,8 +106,18 @@ async function initAudio(){
                 if (!analysis.hasSpeech) {
                     return;
                 }
+                if(analysis.details.idleDurration > 3){
+                    setTimeout(() => {
+                        _mediaRecorder.stop();
+                        _mediaRecorder.start();
+                    }, 0);
+                }
 
-                _worker.postMessage({ type: 'generate', data: { audio: channelData, language: 'english' } });
+                _worker.postMessage({ type: 'generate', data: {
+                    audio: channelData, 
+                    language: 'english',
+                    generationId: getGen(),
+                } });
             } catch (e) {
                 console.error('Error decoding audio data:', e);
             }
@@ -122,18 +132,28 @@ async function initAudio(){
 }
 
 function loopFlushAudio() {
+    setTimeout(loopFlushAudio, 500);
     if (_recordingStatus == eRecordingState.Recording)
     {
         _mediaRecorder.requestData();
-        setTimeout(loopFlushAudio, 25);
     }
 }
 
+let _bubbleArr: HTMLDivElement[] = [];
+function getGen(): number {
+    return _bubbleArr.length - 1;
+}
+function getBubble(id: number): HTMLDivElement { 
+    return _bubbleArr[id];
+}
+let _currDiv: HTMLDivElement = null;
 function incrementBubble(){
+    if(_currDiv && _currDiv.innerText == "") { return; }
     let outputDiv = document.getElementById("output");
     _currDiv = document.createElement("div");
     _currDiv.className = "bubble";
     outputDiv.appendChild(_currDiv);
+    _bubbleArr.push(_currDiv);
 }
 
 function updateStatus(status: eRecordingState){
