@@ -48,11 +48,13 @@ async function setup() {
 
             case 'generate':
                 if (data.output == '') break;
-                getBubble(data.generationId).innerText = data.output;
+                let bubble = getBubble(data.generationId);
+                bubble.innerText = data.output;
+                bubble.classList.add("populated");
                 break;
 
             case 'update':
-                divTps.innerText = data.tps;
+                divTps.innerText = data.tps?.toFixed(1);
                 divTokens.innerText = data.numTokens;
                 break;
         }

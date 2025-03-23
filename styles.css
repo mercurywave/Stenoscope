@@ -27,6 +27,9 @@
 
 #btWrapper{
     display: grid;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
 }
 
 #btRecord{
@@ -38,4 +41,65 @@
     grid-row: 1;
     grid-column: 1;
     display: block;
+}
+
+#title {
+    text-align: center;
+    font-family: 'Arial', sans-serif;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+    margin: 20px 0;
+}
+
+#header p{
+    text-align: center;
+    font-family: 'Arial', sans-serif;
+}
+
+#controls {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 10px 0;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#stats {
+    width: 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.bubble.populated {
+    max-width: 60%;
+    margin: 10px;
+    padding: 10px 15px;
+    border-radius: 15px;
+    background-color: #f1f1f1;
+    color: #333;
+    font-size: 1rem;
+    line-height: 1.5;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word;
+    align-self: flex-start;
+    background-color: #d1e7ff;
+}
+
+#output {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+    overflow-y: auto;
+    height: calc(100vh - 150px); /* Adjust height to fit content */
+    max-width: 800px;
+    margin: 0 auto; /* Center horizontally */
 }
