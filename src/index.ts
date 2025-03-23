@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 enum eRecordingState { Idle, Loading, Paused , Recording}
-enum eLoadState { Null, Loading, Loaded }
 
 let _worker: Worker;
 let _recordingStatus: eRecordingState = eRecordingState.Idle;
@@ -79,12 +78,15 @@ async function initAudio(){
 
     _mediaRecorder.onstart = (event) => {
         updateStatus(eRecordingState.Recording);
+        setTimeout(loopFlushAudio, 25);
     };
     
     _mediaRecorder.ondataavailable = (event) => {
-        console.log("asdfer");
+        if(event.data.size <= 0){
+            return;
+        }
         _audioChunks.push(event.data);
-        const blob = new Blob([event.data], { type: _mediaRecorder!.mimeType });
+        const blob = new Blob(_audioChunks, { type: _mediaRecorder!.mimeType });
         const fileReader = new FileReader();
         fileReader.onloadend = async () => {
             try {
@@ -94,10 +96,8 @@ async function initAudio(){
                 const channelData = decoded.getChannelData(0);
 
                 const analysis = audioAnalyzer.analyzeAudioData(channelData);
-                console.log("checking for speech");
                 if (!analysis.hasSpeech) {
-                    console.log("no speech");
-                    //return;
+                    return;
                 }
 
                 _worker.postMessage({ type: 'generate', data: { audio: channelData, language: 'english' } });
@@ -113,6 +113,14 @@ async function initAudio(){
         updateStatus(eRecordingState.Paused);
     };
     _mediaInit.resolve();
+}
+
+function loopFlushAudio() {
+    if (_recordingStatus == eRecordingState.Recording)
+    {
+        _mediaRecorder.requestData();
+        setTimeout(loopFlushAudio, 25);
+    }
 }
 
 function updateStatus(status: eRecordingState){
