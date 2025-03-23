@@ -1,5 +1,6 @@
 import { AudioAnalyzer } from "./audio analyzer";
 import { Deferred } from "./util";
+import { AudioVisualizer } from "./visualizer";
 
 document.addEventListener("DOMContentLoaded", () => {
     incrementBubble();
@@ -129,6 +130,9 @@ async function initAudio(){
         updateStatus(eRecordingState.Paused);
     };
     _mediaInit.resolve();
+    
+    let viz = document.querySelector("#ctlViz") as AudioVisualizer;
+    viz.Stream = stream;
 }
 
 function loopFlushAudio() {

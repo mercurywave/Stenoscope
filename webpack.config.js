@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
     entry: {
-        app: ['./src/index.ts'],  // Entry point for your application
+        app: ['./src/index.ts', './src/visualizer.ts'],  // Entry point for your application
     },
     module: {
         rules: [

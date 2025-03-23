@@ -4,16 +4,15 @@
 }
 
 #btRecord{
-    width: 60px;
-    height: 60px;
+    width: 75px;
+    height: 75px;
     padding: 0;
-    border-color: #6699bb;
-    border-radius: 50%;
+    border: none;
     cursor: pointer;
-    border-width: 6px;
     display: inline-flex;
     justify-content: center;
     align-items: center;
+    background-color: transparent;
 }
 
 #recState{
@@ -24,4 +23,19 @@
 
 .idle {
     color: #6699bb;
+}
+
+#btWrapper{
+    display: grid;
+}
+
+#btRecord{
+    grid-row: 1;
+    grid-column: 1;
+}
+
+#ctlViz{
+    grid-row: 1;
+    grid-column: 1;
+    display: block;
 }
