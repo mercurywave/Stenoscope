@@ -15,6 +15,7 @@ let _recordingStatus: eRecordingState = eRecordingState.Idle;
 let _mediaRecorder: MediaRecorder;
 let _audioChunks: Blob[] = [];
 let _useWhisper = false;
+let _skipIconUpdate = false;
 
 async function setup() {
 
@@ -115,8 +116,10 @@ async function initAudio() {
                 }
                 if (analysis.details.idleDurration > 3) {
                     setTimeout(() => {
+                        _skipIconUpdate = true;
                         _mediaRecorder.stop();
                         _mediaRecorder.start();
+                        _skipIconUpdate = false;
                     }, 0);
                 }
 
@@ -169,6 +172,7 @@ function incrementBubble() {
 
 function updateStatus(status: eRecordingState) {
     _recordingStatus = status;
+    if(_skipIconUpdate) return;
     let divStatus = document.getElementById("recState");
     switch (status) {
         case eRecordingState.Idle:
