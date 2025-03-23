@@ -7,23 +7,29 @@ document.addEventListener("DOMContentLoaded", () => {
     setup();
 });
 
-enum eRecordingState { Idle, Loading, Paused , Recording}
+enum eRecordingState { Idle, Loading, Paused, Recording }
 
 let _worker: Worker;
 let _recordingStatus: eRecordingState = eRecordingState.Idle;
 
 let _mediaRecorder: MediaRecorder;
 let _audioChunks: Blob[] = [];
+let _useWhisper = false;
 
 async function setup() {
 
     let btRecord = document.getElementById("btRecord");
     let divTps = document.getElementById("tps");
     let divTokens = document.getElementById("tokens");
-    
+
     updateStatus(eRecordingState.Idle);
 
-    _worker = new Worker(new URL("./transcribe worker.ts", import.meta.url), { type: "module" });
+    if (_useWhisper) {
+        _worker = new Worker(new URL("./whisper worker.ts", import.meta.url), { type: "module" });
+    }
+    else {
+        _worker = new Worker(new URL("./transcribe worker.ts", import.meta.url), { type: "module" });
+    }
 
     _worker.addEventListener("message", (e: MessageEvent) => {
         const data = e.data;
@@ -40,7 +46,7 @@ async function setup() {
                 break;
 
             case 'generate':
-                if(data.output == '') break;
+                if (data.output == '') break;
                 getBubble(data.generationId).innerText = data.output;
                 break;
 
@@ -52,7 +58,7 @@ async function setup() {
     });
 
     btRecord.addEventListener("click", async () => {
-        if(_recordingStatus == eRecordingState.Idle){
+        if (_recordingStatus == eRecordingState.Idle) {
             updateStatus(eRecordingState.Loading);
             _worker.postMessage({ type: "load" });
         }
@@ -65,8 +71,8 @@ async function setup() {
 }
 
 let _mediaInit: Deferred<void> = null;
-async function initAudio(){
-    if(_mediaInit) {
+async function initAudio() {
+    if (_mediaInit) {
         await _mediaInit;
         return;
     }
@@ -80,17 +86,17 @@ async function initAudio(){
         }
     });
     _mediaRecorder = new MediaRecorder(stream);
-    let audioContext = new AudioContext({sampleRate: 16000});
-    let audioAnalyzer = new AudioAnalyzer({sampleRate: audioContext.sampleRate});
+    let audioContext = new AudioContext({ sampleRate: 16000 });
+    let audioAnalyzer = new AudioAnalyzer({ sampleRate: audioContext.sampleRate });
 
     _mediaRecorder.onstart = (event) => {
         incrementBubble();
         _audioChunks = [];
         updateStatus(eRecordingState.Recording);
     };
-    
+
     _mediaRecorder.ondataavailable = (event) => {
-        if(event.data.size <= 0){
+        if (event.data.size <= 0) {
             return;
         }
         _audioChunks.push(event.data);
@@ -107,18 +113,20 @@ async function initAudio(){
                 if (!analysis.hasSpeech) {
                     return;
                 }
-                if(analysis.details.idleDurration > 3){
+                if (analysis.details.idleDurration > 3) {
                     setTimeout(() => {
                         _mediaRecorder.stop();
                         _mediaRecorder.start();
                     }, 0);
                 }
 
-                _worker.postMessage({ type: 'generate', data: {
-                    audio: channelData, 
-                    language: 'english',
-                    generationId: getGen(),
-                } });
+                _worker.postMessage({
+                    type: 'generate', data: {
+                        audio: channelData,
+                        language: 'english',
+                        generationId: getGen(),
+                    }
+                });
             } catch (e) {
                 console.error('Error decoding audio data:', e);
             }
@@ -130,15 +138,14 @@ async function initAudio(){
         updateStatus(eRecordingState.Paused);
     };
     _mediaInit.resolve();
-    
+
     let viz = document.querySelector("#ctlViz") as AudioVisualizer;
     viz.Stream = stream;
 }
 
 function loopFlushAudio() {
     setTimeout(loopFlushAudio, 150);
-    if (_recordingStatus == eRecordingState.Recording)
-    {
+    if (_recordingStatus == eRecordingState.Recording) {
         _mediaRecorder.requestData();
     }
 }
@@ -147,12 +154,12 @@ let _bubbleArr: HTMLDivElement[] = [];
 function getGen(): number {
     return _bubbleArr.length - 1;
 }
-function getBubble(id: number): HTMLDivElement { 
+function getBubble(id: number): HTMLDivElement {
     return _bubbleArr[id];
 }
 let _currDiv: HTMLDivElement = null;
-function incrementBubble(){
-    if(_currDiv && _currDiv.innerText == "") { return; }
+function incrementBubble() {
+    if (_currDiv && _currDiv.innerText == "") { return; }
     let outputDiv = document.getElementById("output");
     _currDiv = document.createElement("div");
     _currDiv.className = "bubble";
@@ -160,10 +167,10 @@ function incrementBubble(){
     _bubbleArr.push(_currDiv);
 }
 
-function updateStatus(status: eRecordingState){
+function updateStatus(status: eRecordingState) {
     _recordingStatus = status;
     let divStatus = document.getElementById("recState");
-    switch(status){
+    switch (status) {
         case eRecordingState.Idle:
             divStatus.textContent = "⏹";
             break;
