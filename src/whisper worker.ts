@@ -1,4 +1,4 @@
-import { AutomaticSpeechRecognitionPipeline, pipeline } from "@huggingface/transformers";
+/*import { AutomaticSpeechRecognitionPipeline, pipeline } from "@huggingface/transformers";
 
 // this is much slower, but seems higher quality
 
@@ -92,3 +92,4 @@ self.addEventListener('message', async (e: MessageEvent) => {
             break;
     }
 });
+*/

@@ -31,7 +31,7 @@ async function setup() {
     updateStatus(eRecordingState.Idle);
 
     if (_useWhisper) {
-        _worker = new Worker(new URL("./whisper worker.ts", import.meta.url), { type: "module" });
+        throw 'removed whisper - slowed down workflow too much';
     }
     else {
         _worker = new Worker(new URL("./transcribe worker.ts", import.meta.url), { type: "module" });
