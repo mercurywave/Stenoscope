@@ -1,4 +1,5 @@
 import { AudioAnalyzer } from "./audio analyzer";
+import { LLM } from "./llm";
 import { Deferred } from "./util";
 import { AudioVisualizer } from "./visualizer";
 
@@ -22,6 +23,9 @@ async function setup() {
     let btRecord = document.getElementById("btRecord");
     let divTps = document.getElementById("tps");
     let divTokens = document.getElementById("tokens");
+
+    let btClean = document.getElementById("btClean") as HTMLButtonElement;
+    let btSummarize = document.getElementById("btSummarize") as HTMLButtonElement;
 
     updateStatus(eRecordingState.Idle);
 
@@ -51,6 +55,7 @@ async function setup() {
                 let bubble = getBubble(data.generationId);
                 bubble.innerText = data.output;
                 bubble.classList.add("populated");
+                enableActionButtons();
                 break;
 
             case 'update':
@@ -71,6 +76,8 @@ async function setup() {
             _mediaRecorder.stop();
         }
     });
+
+    btClean.addEventListener("click", () => runClean());
 }
 
 let _mediaInit: Deferred<void> = null;
@@ -190,4 +197,43 @@ function updateStatus(status: eRecordingState) {
             divStatus.textContent = "⏸";
             break;
     }
+}
+
+async function runClean(): Promise<void>{
+    disableActionButtons();
+    let lines = await LLM.ChatLineCleanup(getChatLines(), replaceChatLines);
+    replaceChatLines(lines);
+    enableActionButtons();
+}
+
+function getChatLines():string[]{
+    let lines:string[] = [];
+    for(let bubble of _bubbleArr){
+        if(bubble.innerText != ""){
+            lines.push(bubble.innerText);
+        }
+    }
+    return lines;
+}
+function replaceChatLines(lines: string[]){
+    for (let i = 0; i < lines.length; i++) {
+        let bubble = _bubbleArr[i];
+        let next = lines[i];
+        if(bubble.innerText != next){
+            bubble.innerText = next;
+        }
+    }
+}
+
+function disableActionButtons(){
+    let btClean = document.getElementById("btClean") as HTMLButtonElement;
+    let btSummarize = document.getElementById("btSummarize") as HTMLButtonElement;
+    btClean.disabled = true;
+    btSummarize.disabled = true;
+}
+function enableActionButtons(){
+    let btClean = document.getElementById("btClean") as HTMLButtonElement;
+    let btSummarize = document.getElementById("btSummarize") as HTMLButtonElement;
+    btClean.disabled = false;
+    btSummarize.disabled = false;
 }
