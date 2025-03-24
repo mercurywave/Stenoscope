@@ -1,4 +1,3 @@
-
 export namespace util {
     export function ToggleClassIf(element: HTMLElement, className: string, condition: boolean) {
         if (!condition && element.classList.contains(className)) {
@@ -8,8 +7,8 @@ export namespace util {
         }
     }
 
-    
-    export function mkTmplt(innerHtml): HTMLTemplateElement{
+
+    export function mkTmplt(innerHtml): HTMLTemplateElement {
         var tmplt = document.createElement("template");
         tmplt.innerHTML = innerHtml;
         return tmplt;
@@ -17,20 +16,20 @@ export namespace util {
 
     export function ellipsize(text, maxLength) {
         if (text.length > maxLength) {
-          return text.slice(0, maxLength - 3) + "...";
+            return text.slice(0, maxLength - 3) + "...";
         }
         return text;
     }
 
-    export function deepCopy(obj: any):any{
+    export function deepCopy(obj: any): any {
         return JSON.parse(JSON.stringify(obj));
     }
 }
 
 export class Deferred<T> implements Promise<T> {
 
-    private _resolveSelf:(value: T | PromiseLike<T>) => void;
-    private _rejectSelf:(value: T | PromiseLike<T>) => void;
+    private _resolveSelf: (value: T | PromiseLike<T>) => void;
+    private _rejectSelf: (value: T | PromiseLike<T>) => void;
     private promise: Promise<T>
 
     constructor() {
@@ -66,3 +65,39 @@ export class Deferred<T> implements Promise<T> {
     public reject(reason?: any) { this._rejectSelf(reason); }
 
 }
+
+export class AsyncCriticalSection {
+    private queue: (() => void)[] = [];
+    public isLocked: boolean = false;
+
+    public async waitForCriticalSection(): Promise<void> {
+        if (!this.isLocked) {
+            this.isLocked = true;
+            return;
+        }
+
+        return new Promise<void>((resolve) => {
+            this.queue.push(resolve);
+        });
+    }
+
+    public endCriticalSection(): void {
+        if (this.queue.length > 0) {
+            const next = this.queue.shift();
+            if (next) next();
+        } else {
+            this.isLocked = false;
+        }
+    }
+
+    public async runInCriticalSection<T>(fn: () => Promise<T>): Promise<T> {
+        await this.waitForCriticalSection();
+        try {
+            return await fn();
+        } catch (e) { throw e; }
+        finally {
+            this.endCriticalSection();
+        }
+    }
+}
+
