@@ -24,6 +24,7 @@ async function setup() {
     let divTps = document.getElementById("tps");
     let divTokens = document.getElementById("tokens");
 
+    let btCopy = document.getElementById("btCopy") as HTMLButtonElement;
     let btClean = document.getElementById("btClean") as HTMLButtonElement;
     let btSummarize = document.getElementById("btSummarize") as HTMLButtonElement;
 
@@ -78,6 +79,10 @@ async function setup() {
     });
 
     btClean.addEventListener("click", () => runClean());
+    btCopy.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(getChatLines().join("\n"));
+        console.log("copied to clipboard");
+    });
 }
 
 let _mediaInit: Deferred<void> = null;
@@ -226,14 +231,18 @@ function replaceChatLines(lines: string[]){
 }
 
 function disableActionButtons(){
+    let btCopy = document.getElementById("btCopy") as HTMLButtonElement;
     let btClean = document.getElementById("btClean") as HTMLButtonElement;
     let btSummarize = document.getElementById("btSummarize") as HTMLButtonElement;
+    btCopy.disabled = true;
     btClean.disabled = true;
     btSummarize.disabled = true;
 }
 function enableActionButtons(){
+    let btCopy = document.getElementById("btCopy") as HTMLButtonElement;
     let btClean = document.getElementById("btClean") as HTMLButtonElement;
     let btSummarize = document.getElementById("btSummarize") as HTMLButtonElement;
+    btCopy.disabled = false;
     btClean.disabled = false;
     btSummarize.disabled = false;
 }
