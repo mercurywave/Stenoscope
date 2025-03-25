@@ -1,4 +1,5 @@
 import { AutoProcessor, AutoTokenizer, MoonshineForConditionalGeneration, pipeline, PreTrainedModel, PreTrainedTokenizer, Processor, TextStreamer } from "@huggingface/transformers";
+import { AsyncCriticalSection } from "./util";
 
 let _manager: Manager;
 class Manager {
@@ -6,7 +7,7 @@ class Manager {
     _tokenizer: PreTrainedTokenizer = null;
     _processor: Processor = null;
     _model: PreTrainedModel = null;
-    _processsing = false;
+    _queue: AsyncCriticalSection = new AsyncCriticalSection();
     _loaded = false;
     //_instance: AutomaticSpeechRecognitionPipeline = null;
 
@@ -25,22 +26,15 @@ class Manager {
             },
             device: 'webgpu',
         } as any); // seems like there are parameters that aren't in the type defs
-        // this._instance = await pipeline("automatic-speech-recognition", this._modelId, {
-        //     progress_callback: progressCallback,
-        //     dtype: {
-        //         encoder_model: 'fp32', // 'fp16' works too
-        //         decoder_model_merged: 'q4', // or 'fp32' ('fp16' is broken)
-        //     },
-        //     device: 'webgpu',
-        // } as any); // seems like there are parameters that aren't in the type defs
         self.postMessage({ status: 'ready' });
         this._loaded = true;
     }
 
     // @ts-ignore
-    public async run({ audio, language, generationId }) {
-        if (!this._loaded || this._processsing) return;
-        this._processsing = true;
+    public async run({ audio, language, generationId, finalize }) {
+        if (!this._loaded) return;
+        if(!finalize && this._queue.isLocked) return;
+        await this._queue.waitForCriticalSection();
         self.postMessage({ status: 'start' });
 
         let startTime = performance.now();
@@ -83,7 +77,7 @@ class Manager {
             generationId
         });
 
-        this._processsing = false;
+        this._queue.endCriticalSection();
     }
 }
 

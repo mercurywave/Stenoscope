@@ -115,49 +115,55 @@ async function initAudio() {
             return;
         }
         _audioChunks.push(event.data);
-        const blob = new Blob(_audioChunks, { type: _mediaRecorder!.mimeType });
-        const fileReader = new FileReader();
-        fileReader.onloadend = async () => {
-            try {
-                const arrayBuffer = fileReader.result;
-
-                const decoded = await audioContext.decodeAudioData(arrayBuffer as ArrayBuffer);
-                const channelData = decoded.getChannelData(0);
-
-                const analysis = audioAnalyzer.analyzeAudioData(channelData);
-                if (!analysis.hasSpeech) {
-                    return;
-                }
-                if (analysis.details.idleDurration > 3) {
-                    setTimeout(() => {
-                        _skipIconUpdate = true;
-                        _mediaRecorder.stop();
-                        _mediaRecorder.start();
-                        _skipIconUpdate = false;
-                    }, 0);
-                }
-
-                _worker.postMessage({
-                    type: 'generate', data: {
-                        audio: channelData,
-                        language: 'english',
-                        generationId: getGen(),
-                    }
-                });
-            } catch (e) {
-                console.error('Error decoding audio data:', e);
-            }
-        }
-        fileReader.readAsArrayBuffer(blob);
+        processAudio(_audioChunks, audioContext, audioAnalyzer, false);
     };
 
     _mediaRecorder.onstop = async () => {
         updateStatus(eRecordingState.Paused);
+        processAudio(_audioChunks, audioContext, audioAnalyzer, true);
     };
     _mediaInit.resolve();
 
     let viz = document.querySelector("#ctlViz") as AudioVisualizer;
     viz.Stream = stream;
+}
+
+function processAudio(audioChunks: Blob[], audioContext: AudioContext, audioAnalyzer: AudioAnalyzer, finalize: boolean) {
+    const blob = new Blob(audioChunks, { type: _mediaRecorder!.mimeType });
+    const fileReader = new FileReader();
+    fileReader.onloadend = async () => {
+        try {
+            const arrayBuffer = fileReader.result;
+
+            const decoded = await audioContext.decodeAudioData(arrayBuffer as ArrayBuffer);
+            const channelData = decoded.getChannelData(0);
+
+            const analysis = audioAnalyzer.analyzeAudioData(channelData);
+            if (!analysis.hasSpeech) {
+                return;
+            }
+            if (analysis.details.idleDurration > 3) {
+                setTimeout(() => {
+                    _skipIconUpdate = true;
+                    _mediaRecorder.stop();
+                    _mediaRecorder.start();
+                    _skipIconUpdate = false;
+                }, 0);
+            }
+
+            _worker.postMessage({
+                type: 'generate', data: {
+                    audio: channelData,
+                    language: 'english',
+                    generationId: getGen(),
+                    finalize: finalize,
+                }
+            });
+        } catch (e) {
+            console.error('Error decoding audio data:', e);
+        }
+    };
+    fileReader.readAsArrayBuffer(blob);
 }
 
 function loopFlushAudio() {
