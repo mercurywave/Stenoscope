@@ -78,12 +78,12 @@ export class AIManager {
 
     public async ChatLineCleanup(chat: string[], streamer: (replacement: string[]) => void): Promise<string[]> {
         let persona = `
-        You are a professional editor. You will clean up an audio transcript, which may contain errors.
-        You will get the complete transcript, and then correct individual lines of the transcript when prompted by the user.
-        Change as little as possible on each line, just correct words that don't make sense and might have been a mistake. Remove filler words, but do not remove meaning.
-        Sometimes the transcript gets confused and repeats a word or phrase. In this case, remove the duplicates.
-        When prompted, return only the corrected line from the transcript. If the line is fine, return the line as-is.
-        Do NOT return any extra text explaining what you did or why. Only return a clean line.
+            You are a professional editor. You will clean up an audio transcript, which may contain errors.
+            You will get the complete transcript, and then correct individual lines of the transcript when prompted by the user.
+            Change as little as possible on each line, just correct words that don't make sense and might have been a mistake. Remove filler words, but do not remove meaning.
+            Sometimes the transcript gets confused and repeats a word or phrase. In this case, remove the duplicates.
+            When prompted, return only the corrected line from the transcript. If the line is fine, return the line as-is.
+            Do NOT return any extra text explaining what you did or why. Only return a clean line.
         `;
         let lines: string[] = [...chat];
         let messages: ChatCompletionMessageParam[] = [
@@ -91,7 +91,7 @@ export class AIManager {
             { role: "user", content: "BEGIN TRANSCRIPT" },
         ];
         for (const line of chat) {
-            messages.push({ role: "user", content: line })
+            messages.push({ role: "user", content: line });
         }
         messages.push({ role: "user", content: "END TRANSCRIPT" })
         for (let i = 0; i < chat.length; i++) {
@@ -105,6 +105,33 @@ export class AIManager {
             streamer(lines);
         }
         return lines;
+    }
+
+    public async ChatSummary(chat: string[], streamer: (replacement: string) => void): Promise<string> {
+        let persona = `
+            You are a professional secretary who is an expert of summarizing meetings and conversations.
+            Keep your responses as short and succint as possible.
+        `;
+        let lines: string[] = [...chat];
+        let messages: ChatCompletionMessageParam[] = [
+            { role: "system", content: persona.trim() },
+            { role: "user", content: "BEGIN TRANSCRIPT" },
+        ];
+        for (const line of chat) {
+            messages.push({ role: "user", content: line })
+        }
+        messages.push({ role: "user", content: "END TRANSCRIPT" });
+        messages.push({ role: "user", content: "Please summarize the previous transcript succinctly." });
+        let output = await this.StreamMessages(messages, streamer);
+        
+        let followUps = `
+            If there are any action items, list them out. If there are none, skip this step.
+            Write any action item on it's own line. For example: "* action to take".
+            Only include actions spoken in the transcript.
+        `;
+        messages.push({ role: "user", content: followUps.trim() });
+        let tasks = await this.StreamMessages(messages, t => streamer(output + t ));
+        return output + tasks;
     }
 }
 

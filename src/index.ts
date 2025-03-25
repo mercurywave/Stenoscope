@@ -83,6 +83,7 @@ async function setup() {
         await navigator.clipboard.writeText(getChatLines().join("\n"));
         console.log("copied to clipboard");
     });
+    btSummarize.addEventListener("click", () => runSummary());
 }
 
 let _mediaInit: Deferred<void> = null;
@@ -234,6 +235,21 @@ function replaceChatLines(lines: string[]){
             bubble.innerText = next;
         }
     }
+}
+
+async function runSummary(): Promise<void>{
+    disableActionButtons();
+    let divSummary = document.getElementById("divSummary");
+    let container = document.createElement("div");
+    container.classList.add("summary");
+    divSummary.innerHTML = '';
+    divSummary.appendChild(container);
+    container.innerText = "...";
+
+    let summary = await LLM.ChatSummary(getChatLines(), t => {container.innerText = t;});
+    container.innerText = summary;
+
+    enableActionButtons();
 }
 
 function disableActionButtons(){
